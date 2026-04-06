@@ -48,3 +48,13 @@ frontend/dist/
 frontend/.next/
 frontend/.vite/
 frontend/.cache/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+frontend/.env*.local
+
+# Environment variables
+.env
+backend/.env
