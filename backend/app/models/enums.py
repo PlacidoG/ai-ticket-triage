@@ -1,6 +1,6 @@
 from enum import Enum
 
-class TicketPriority(str, Enum):
+class TicketStatus(str, Enum):
     NEW = "new"
     TRIAGED = "triaged"
     IN_PROGRESS = "in_progress"
@@ -25,3 +25,11 @@ class Category(str, Enum):
 class ActionType (str, Enum):
     OVERRIDE = "override"
     STATUS_UPDATE = "status_change"
+
+
+
+class TicketSource(str, Enum):
+    WEB_FORM = "web_form"
+    API = "api"
+    EMAIL = "email"
+    MONITORING = "monitoring"
