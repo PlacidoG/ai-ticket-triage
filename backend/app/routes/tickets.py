@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -18,12 +18,23 @@ from app.schemas.ticket import (
     TicketUpdate,
 )
 
+from app.services.enrichment_service import run_enrichment
+
 router = APIRouter(prefix="/api/tickets", tags=["tickets"])
 
 
 @router.post("", response_model=TicketResponse, status_code=201)
-def create_ticket(payload: TicketCreate, db: Session = Depends(get_db)):
-    """Create a ticket from the web form. Source is always 'web_form'."""
+def create_ticket(
+    payload: TicketCreate, 
+    background_tasks: BackgroundTasks, 
+    db: Session = Depends(get_db),
+):
+    """Create a ticket from the web form. Source is always 'web_form'.
+
+    Returns the ticket immediately. AI enrichment runs in the background
+    and updates the ticket status to 'triaged' when complete (~2-3 seconds).
+    """
+
     ticket = Ticket(
         title=payload.title,
         description=payload.description,
@@ -33,6 +44,10 @@ def create_ticket(payload: TicketCreate, db: Session = Depends(get_db)):
     db.add(ticket)
     db.commit()
     db.refresh(ticket)
+
+    background_tasks.add_task(run_enrichment, ticket.id)
+
+    
     return ticket
 
 
