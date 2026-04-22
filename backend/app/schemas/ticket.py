@@ -62,9 +62,15 @@ class EnrichmentResponse(BaseModel):
     suggested_response: str
     confidence: float
     model_used: str
+    prompt_version: str
+    tokens_in: int
+    tokens_out: int
+    estimated_cost: float
+    raw_response: str | None = None
     created_at: datetime
 
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "proteced_namespaces": ()}
+    
 
 
 class TicketDetailResponse(TicketResponse):

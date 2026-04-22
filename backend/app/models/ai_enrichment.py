@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import uuid
-from sqlalchemy import ForeignKey, Numeric, String, Text
+from typing import TYPE_CHECKING
+
+from sqlalchemy import ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models.ticket import Ticket
 
@@ -39,6 +40,22 @@ class AIEnrichment(Base, TimestampMixin):
         String(50),
         nullable=False,
     )
+
+    # --- Obserability fields ---
+    prompt_version: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="v1.0",
+    )
+    tokens_in: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    tokens_out: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    estimated_cost: Mapped[float] = mapped_column(
+        Numeric(10,6),   # e.g. 0.003450
+        nullable=False,
+        default=0.0,
+    )
+    raw_response: Mapped[str | None] = mapped_column(Text, nullable=True)
+
 
     # ---- Relationships ----
     ticket: Mapped["Ticket"] = relationship(
