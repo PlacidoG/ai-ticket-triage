@@ -1,7 +1,15 @@
+-- Ticket distribution by status
+SELECT status, COUNT(*) FROM tickets GROUP BY status ORDER BY count DESC;
 
-SELECT t.id, t.title, t.status, e.severity, e.category, confidence
-FROM tickets t
-JOIN ai_enrichments e ON t.id = e.ticket_id
-LIMIT 5;
+-- Enrichment distribution by severity
+SELECT severity, COUNT(*) FROM ai_enrichments GROUP BY severity;
 
-SELECT * FROM agent_actions ORDER BY created_at DESC;
+-- Agent actions
+SELECT action_type, COUNT(*) FROM agent_actions GROUP BY action_type;
+
+-- Cost summary
+SELECT
+    COUNT(*) as total,
+    ROUND(SUM(estimated_cost)::numeric, 4) as total_cost,
+    ROUND(AVG(estimated_cost)::numeric, 4) as avg_cost
+FROM ai_enrichments;
