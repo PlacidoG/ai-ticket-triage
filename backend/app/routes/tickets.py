@@ -121,7 +121,7 @@ def update_ticket(
     payload: TicketUpdate,
     db: Session = Depends(get_db),
 ):
-    """Update ticket status and/or assignment."""
+    """Update ticket status and/or assignment.Logs status changes to audit trail."""
     ticket = db.get(Ticket, ticket_id)
     if not ticket:
         raise TicketNotFoundError(ticket_id)
@@ -130,8 +130,24 @@ def update_ticket(
         valid = [s.value for s in TicketStatus]
         if payload.status not in valid:
             raise InvalidStatusError(payload.status, valid)
+        
+        old_status = ticket.status
         ticket.status = payload.status
 
+        # Log status change in audit trail
+        if old_status != payload.status:
+            from app.models.agent_action import AgentAction
+            action = AgentAction(
+                ticket_id=ticket.id,
+                agent_id=payload.agent_id or "system",
+                action_type="status_change",
+                override_field="status",
+                old_value=old_status,
+                new_value=payload.status,
+            )
+            db.add(action)
+
+            
     if payload.assigned_to is not None:
         ticket.assigned_to = payload.assigned_to
 

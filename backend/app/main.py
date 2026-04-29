@@ -4,7 +4,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import tickets, intake
+from app.routes import tickets, intake, overrides, dashboard
 
 # Show enrichment logs in terminal
 logging.basicConfig(
@@ -28,6 +28,8 @@ app.add_middleware(
 
 app.include_router(tickets.router)
 app.include_router(intake.router)
+app.include_router(overrides.router)
+app.include_router(dashboard.router)
 
 
 

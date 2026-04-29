@@ -16,7 +16,7 @@ class TicketCreate(BaseModel):
     """Used by the web form: POST /api/tickets/"""
     title: str = Field(..., min_length=1, max_length=255)
     description: str = Field(..., min_length=1)
-    submitter_email: str | None = Field(None, man_length=255)
+    submitter_email: str | None = Field(None, max_length=255)
 
 
 
@@ -34,6 +34,7 @@ class TicketUpdate(BaseModel):
     """PATCH /api/tickets/{id} - update status or assignment"""
     status: str | None = None
     assigned_to: str | None = None
+    agent_id: str | None = None
 
 
 # --- Response schemas (what the API returns) ---
@@ -69,7 +70,7 @@ class EnrichmentResponse(BaseModel):
     raw_response: str | None = None
     created_at: datetime
 
-    model_config = {"from_attributes": True, "proteced_namespaces": ()}
+    model_config = {"from_attributes": True, "pro_namespaces": ()}
     
 
 
@@ -83,3 +84,58 @@ class TicketListResponse(BaseModel):
     tickets: list[TicketResponse]
     next_cursor: uuid.UUID | None = None
     has_more: bool = False
+
+
+# --- Override schemas ---
+
+class OverrideRequest(BaseModel):
+    """Agent overrides an AI enrichment field"""
+    field: str = Field(..., description="Field to override: severity, category, or suggested_response")
+    new_value: str = Field(..., min_length=1)
+    agent_id: str = Field(..., min_length=1, max_length=100)
+
+
+class OverrideResponse(BaseModel):
+    """Confirmation of the override."""
+    ticket_id: uuid.UUID
+    field: str
+    old_value: str
+    new_value: str
+    agent_id: str
+
+    model_config = {"from_attributes": True}
+
+
+# --- Dashboard schemas ---
+
+class DashboardSummary(BaseModel):
+    """Top-level metrics for dashboard cards."""
+    total_tickets: int
+    open_tickets: int
+    critical_high_tickets: int
+    ai_accuracy_rate: float
+    avg_enrichment_cost: float
+    total_enrichment_cost: float
+    total_enriched: int
+
+
+class TicketByField(BaseModel):
+    """Generic count-by-field structure for charts."""
+    label: str
+    count: int
+
+
+class OverrideBreakdown(BaseModel):
+    """How often each field gets overrridden."""
+    field: str
+    override_count: int
+    total_enriched: int
+    accuracy_rate: float
+
+
+class DashboardCharts(BaseModel):
+    """Aggregated data for dashboard charts."""
+    by_severity: list[TicketByField]
+    by_category: list[TicketByField]
+    by_status: list[TicketByField]
+    override_breakdown: list[OverrideBreakdown]
