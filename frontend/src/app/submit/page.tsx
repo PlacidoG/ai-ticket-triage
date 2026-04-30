@@ -1,3 +1,4 @@
+import { TicketForm } from "@/components/ticket-form";
 
 export default function SubmitPage() {
   return (
@@ -5,12 +6,11 @@ export default function SubmitPage() {
       <div>
         <h1 className="text-3xl font-bold">Submit Ticket</h1>
         <p className="text-muted-foreground">
-          Create a new support ticket
+          Describe your issue and our AI will classify and prioritize it
+          automatically
         </p>
       </div>
-      <div className="rounded-lg border border-dashed p-12 text-center text-muted-foreground">
-        Submission form coming on Day 9
-      </div>
+      <TicketForm />
     </div>
   );
 }

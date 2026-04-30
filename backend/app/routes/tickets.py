@@ -5,6 +5,7 @@ import uuid
 from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.errors import InvalidStatusError, TicketNotFoundError
@@ -14,6 +15,7 @@ from app.schemas.ticket import (
     TicketCreate,
     TicketDetailResponse,
     TicketListResponse,
+    TicketListItem,
     TicketResponse,
     TicketUpdate,
 )

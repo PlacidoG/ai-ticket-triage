@@ -50,6 +50,13 @@ class TicketResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+
+class TicketListItem(TicketResponse):
+    """Ticket with lightweight enrichment summary for list views."""
+    severity: str | None = None
+    category: str | None = None
+    confidence: float | None = None
+
     model_config = {"from_attributes": True, "protected_namespaces": ()}
 
 
@@ -81,7 +88,7 @@ class TicketDetailResponse(TicketResponse):
 
 class TicketListResponse(BaseModel):
     """Cursor-paginated list of tickets"""
-    tickets: list[TicketResponse]
+    tickets: list[TicketListItem]
     next_cursor: uuid.UUID | None = None
     has_more: bool = False
 
