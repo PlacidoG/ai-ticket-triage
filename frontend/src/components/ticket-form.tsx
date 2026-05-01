@@ -327,7 +327,7 @@ export function TicketForm() {
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="min-w-[140px]"
+              className="min-w-[140px] transition-colors hover:bg-blue-600 hover:text-white"
             >
               {isSubmitting ? (
                 <>

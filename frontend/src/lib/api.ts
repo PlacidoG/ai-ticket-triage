@@ -11,6 +11,9 @@ export interface Ticket {
   assigned_to: string | null;
   created_at: string;
   updated_at: string;
+  severity: string | null;
+  category: string | null;
+  confidence: number | null;
 }
 
 export interface Enrichment {
@@ -37,6 +40,7 @@ export interface TicketListResponse {
   tickets: Ticket[];
   next_cursor: string | null;
   has_more: boolean;
+  total: number;
 }
 
 export interface DashboardSummary {
@@ -99,6 +103,7 @@ export async function getTickets(params?: {
   severity?: string;
   category?: string;
   assigned_to?: string;
+  order?: string;
   after?: string;
   limit?: number;
 }): Promise<TicketListResponse> {

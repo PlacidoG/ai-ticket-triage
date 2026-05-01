@@ -59,52 +59,99 @@ def list_tickets(
     severity: str | None = Query(None),
     category: str | None = Query(None),
     assigned_to: str | None = Query(None),
+    order: str = Query("desc", description="Sort by created_at: 'desc' (newest first) or 'asc' (oldest first)"),
     after: uuid.UUID | None = Query(None, description="Cursor: ticket ID to start after"),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-    """List tickets with optional filters and cursor-based pagination.
+    """List tickets with optional filters, sorting, and cursor-based pagination.
 
-    Cursor logic: tickets are sorted by created_at DESC.
-    Pass `after=<ticket_id>` to get the next page — returns tickets
-    created *before* that ticket.
+    Includes lightweight enrichment data (severity, category, confidence)
+    for badge display in the list view.
     """
-    query = select(Ticket).order_by(Ticket.created_at.desc(), Ticket.id.desc())
+    from sqlalchemy import func
+    from app.models.ai_enrichment import AIEnrichment
+
+    # --- Base query with enrichment join ---
+    base_query = (
+        select(Ticket)
+        .outerjoin(Ticket.enrichment)
+        .options(joinedload(Ticket.enrichment))
+    )
 
     # --- Filters ---
     if status:
-        query = query.where(Ticket.status == status)
+        base_query = base_query.where(Ticket.status == status)
     if assigned_to:
-        query = query.where(Ticket.assigned_to == assigned_to)
+        base_query = base_query.where(Ticket.assigned_to == assigned_to)
+    if severity:
+        base_query = base_query.where(AIEnrichment.severity == severity)
+    if category:
+        base_query = base_query.where(AIEnrichment.category == category)
 
-    # Severity and category live on AIEnrichment, not Ticket.
-    # We'll add join-based filtering on Day 5 when enrichment exists.
-    # For now, these params are accepted but ignored so the API
-    # contract is stable for the frontend.
+    # --- Total count (before pagination) ---
+    count_query = select(func.count()).select_from(
+        base_query.with_only_columns(Ticket.id).subquery()
+    )
+    total = db.execute(count_query).scalar() or 0
+
+    # --- Sorting ---
+    if order == "asc":
+        base_query = base_query.order_by(Ticket.created_at.asc(), Ticket.id.asc())
+    else:
+        base_query = base_query.order_by(Ticket.created_at.desc(), Ticket.id.desc())
 
     # --- Cursor ---
     if after:
         cursor_ticket = db.get(Ticket, after)
         if cursor_ticket:
-            query = query.where(
-                (Ticket.created_at < cursor_ticket.created_at)
-                | (
-                    (Ticket.created_at == cursor_ticket.created_at)
-                    & (Ticket.id < cursor_ticket.id)
+            if order == "asc":
+                base_query = base_query.where(
+                    (Ticket.created_at > cursor_ticket.created_at)
+                    | (
+                        (Ticket.created_at == cursor_ticket.created_at)
+                        & (Ticket.id > cursor_ticket.id)
+                    )
                 )
-            )
+            else:
+                base_query = base_query.where(
+                    (Ticket.created_at < cursor_ticket.created_at)
+                    | (
+                        (Ticket.created_at == cursor_ticket.created_at)
+                        & (Ticket.id < cursor_ticket.id)
+                    )
+                )
 
-    # Fetch one extra to check if there are more results
-    results = db.execute(query.limit(limit + 1)).scalars().all()
+    results = db.execute(base_query.limit(limit + 1)).scalars().unique().all()
 
     has_more = len(results) > limit
     tickets = results[:limit]
     next_cursor = tickets[-1].id if has_more and tickets else None
 
+    # Build response with enrichment summary
+    ticket_items = []
+    for t in tickets:
+        item = TicketListItem(
+            id=t.id,
+            title=t.title,
+            description=t.description,
+            status=t.status,
+            source=t.source,
+            submitter_email=t.submitter_email,
+            assigned_to=t.assigned_to,
+            created_at=t.created_at,
+            updated_at=t.updated_at,
+            severity=t.enrichment.severity if t.enrichment else None,
+            category=t.enrichment.category if t.enrichment else None,
+            confidence=t.enrichment.confidence if t.enrichment else None,
+        )
+        ticket_items.append(item)
+
     return TicketListResponse(
-        tickets=tickets,
+        tickets=ticket_items,
         next_cursor=next_cursor,
         has_more=has_more,
+        total=total,
     )
 
 

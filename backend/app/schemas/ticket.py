@@ -91,6 +91,7 @@ class TicketListResponse(BaseModel):
     tickets: list[TicketListItem]
     next_cursor: uuid.UUID | None = None
     has_more: bool = False
+    total: int = 0
 
 
 # --- Override schemas ---
